@@ -1,0 +1,74 @@
+{# required var: cnf_data #}
+{{ ansible_managed | comment }}
+{# my_value: print value by type #}
+{% macro my_value(val, quote_val=true, list_join=',') -%}
+{%- if val is boolean %}{{ val | ternary('1', '0') }}
+{%- elif val is not string and val is not mapping and val is iterable %}{{ val | join(list_join) }}
+{%- else %}
+{%-   if quote_val and val is search('[^\w\-/\.,]') %}
+"{{ val | string | replace('\\', '\\\\') | replace('"', '\\"') }}"
+{%-   else %}{{ val | string }}
+{%-   endif %}
+{%- endif %}
+{%- endmacro %}
+{# my_option: print option with 'name = value' or 'name' only #}
+{% macro my_option(name, value, quote_val=true) -%}
+{#   check if value is $var and evaluate #}
+{%- if value is string and value is match('^\$var\((\w+)\)$') %}
+{%-   set var_name = value | regex_replace('^\$var\((\w+)\)$', '\\1') %}
+{%-   set val = lookup('vars', var_name) %}
+{%- else %}
+{%-   set val = value %}
+{%- endif %}
+{% set nv_delimiter = ' = ' if name is not match('!') else ' ' %}
+{#   operate by name and type of val #}
+{%- if name | length == 0 %}
+{{ my_value(val, quote_val) }}
+{%- elif val is not string and val is not mapping and val is iterable %}
+{%   for v in val %}
+{{   name }}{{ nv_delimiter }}{{ my_value(v, quote_val) }}
+{%   endfor %}
+{%- elif val is string and (val | length == 0 or val == '$set') %}
+{{   name }}
+{%- elif val is string and val == '$unset' %}
+{# leave empty #}
+{%- else %}
+{{   name }}{{ nv_delimiter }}{{ my_value(val, quote_val) }}
+{%- endif %}
+{%- endmacro %}
+
+{% if '$header' in cnf_data | list %}
+{{ my_option('', cnf_data['$header'], false) }}
+{% endif %}
+{% for section_name, options in cnf_data.items() if not section_name is match('\$') %}
+
+[{{ section_name }}]
+
+{# option_keys: all option keys #}
+{% set option_keys = options.keys() %}
+{% set ns = namespace( handled_options=[] ) %}
+{% for batch in __mariadb_option_batches %}
+{# batch_options: add '-' variants to batch options list #}
+{% set batch_options = batch.options | zip( batch.options | map('replace', '_', '-') ) | flatten | unique %}
+{# present_keys: select configured options from batch #}
+{% set present_keys = option_keys | select('match', '^(' ~ batch_options | map('replace', '*', '.*') | map('replace', '+', '.+') | join('|') ~ ')$') %}
+{% if present_keys | length %}
+{#   append handled present_keys #}
+{%   set ns.handled_options = ns.handled_options + present_keys %}
+{{ ('* ' ~ batch.desc) | comment }}
+{%   for k in present_keys %}
+{{     my_option(k, options[k]) }}
+{%   endfor %}
+
+{% endif %}
+{% endfor %}
+{# operate on other options that are not in batch #}
+{% set other_keys = option_keys | reject('in', ns.handled_options) %}
+{% if other_keys | length -%}
+{{ '* Other Options' | comment }}
+{%   for k in other_keys %}
+{{     my_option(k, options[k]) }}
+{%   endfor %}
+{% endif %}
+
+{% endfor %}

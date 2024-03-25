@@ -1,0 +1,10 @@
+---
+
+- name: "Ensure cnf and disabled files for {{ cnf.key }} are absent."
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+    - "{{ cnf_path }}"
+    - "{{ cnf_path_disabled }}"
+  notify: restart mariadb

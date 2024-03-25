@@ -1,0 +1,48 @@
+---
+
+- name: Include OS-specific variables.
+  include_vars: "{{ item }}"
+  with_first_found:
+    - files:
+        # - "vars/{{ ansible_os_family }}-{{ ansible_distribution_major_version }}.yml"
+        - "vars/{{ ansible_os_family }}.yml"
+      skip: true
+
+- name: Define _mariadb_config.
+  set_fact:
+    _mariadb_config: "{{ mariadb_config |
+      combine(mariadb_config_extra_1 | default({}), recursive=True) |
+      combine(mariadb_config_extra_2 | default({}), recursive=True) |
+      combine(mariadb_config_extra_3 | default({}), recursive=True) }}"
+
+
+- name: Define mariadb_packages.
+  set_fact:
+    mariadb_packages: "{{ __mariadb_packages | list }}"
+  when: mariadb_packages is not defined
+
+- name: Define mariadb_config_file.
+  set_fact:
+    mariadb_config_file: "{{ __mariadb_config_file }}"
+  when: mariadb_config_file is not defined
+
+- name: Define mariadb_configs_dir.
+  set_fact:
+    mariadb_configs_dir: "{{ __mariadb_configs_dir }}"
+  when: mariadb_configs_dir is not defined
+
+
+- name: Define mariadb_daemon.
+  set_fact:
+    mariadb_daemon: "{{ __mariadb_daemon }}"
+  when: mariadb_daemon is not defined
+
+- name: Define mariadb_socket.
+  set_fact:
+    mariadb_socket: "{{ __mariadb_socket }}"
+  when: mariadb_socket is not defined
+
+- name: Define mariadb_pid_file.
+  set_fact:
+    mariadb_pid_file: "{{ __mariadb_pid_file }}"
+  when: mariadb_pid_file is not defined

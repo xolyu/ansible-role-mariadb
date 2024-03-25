@@ -1,0 +1,112 @@
+---
+
+# root user
+- name: Root user
+  when:
+    - mariadb_install_packages | bool  or  mariadb_root_auth_update
+  block:
+    # Note: mysql.user is sufficient, since this is from MariaDB 10.4
+    #       a view, which gets data from mysql.global_priv
+    - name: Get list of hosts for the root user.
+      command: >
+        mysql -NBe
+        "SELECT Host FROM mysql.user
+        WHERE User = '{{ mariadb_root_username }}'
+        ORDER BY (Host='localhost') ASC"
+      register: mariadb_root_hosts
+      changed_when: false
+      check_mode: false
+
+    # Update root authentication (multiple auth), MariaDB >= 10.4
+    # Note: We do not use mysql_user for this operation, as it doesn't always
+    #       update the root password correctly. See: https://goo.gl/MSOejW
+    - name: Update MariaDB root authentication for localhost (>= 10.4).
+      command: >
+        mysql -NBe
+        "ALTER USER '{{ mariadb_root_username }}'@'{{ item }}'
+        IDENTIFIED VIA {{ identified_with }}; FLUSH PRIVILEGES;"
+      vars:
+        unix_socket: "{{ mariadb_root_auth_by_unix_socket | default(true) }}"
+        pwd: "{{ mariadb_root_password | default('') }}"
+        identified_with: >-
+          {% if pwd | length %}mariadb_native_password USING PASSWORD('{{ pwd }}')
+          {% if unix_socket | bool %}OR{% endif %}{% endif %}
+          {% if unix_socket | bool %}unix_socket{% endif %}
+      with_items: "{{ mariadb_root_hosts.stdout_lines | default([]) }}"
+      when:
+        - mariadb_root_password | default('') | length  or  mariadb_root_auth_by_unix_socket | default(true)
+        - mariadb_version.major | int > 10 or ( mariadb_version.major | int == 10 and mariadb_version.minor | int >= 4 )
+
+    # Update root authentication unix_socket, MariaDB < 10.4.
+    - name: Update MariaDB root authentication as unix_socket for localhost (10.0 - 10.4).
+      command: >
+        mysql -NBe
+        "ALTER USER '{{ mariadb_root_username }}'@'{{ item }}'
+        IDENTIFIED VIA unix_socket; FLUSH PRIVILEGES;"
+      with_items: "{{ mariadb_root_hosts.stdout_lines | default([]) }}"
+      when:
+        - mariadb_root_auth_by_unix_socket | default(true)
+        - mariadb_version.major | int == 10 and mariadb_version.minor | int < 4
+
+    # Update root password, MariaDB < 10.4.
+    - name: Update MariaDB root password for localhost (< 10.4).
+      command: >
+        mysql -NBe
+        "SET PASSWORD FOR '{{ mariadb_root_username }}'@'{{ item }}'
+        = PASSWORD('{{ mariadb_root_password }}'); FLUSH PRIVILEGES;"
+      with_items: "{{ mariadb_root_hosts.stdout_lines | default([]) }}"
+      when:
+        - not ( mariadb_root_auth_by_unix_socket | default(true) )
+        - mariadb_root_password | default('') | length
+        - mariadb_version.major | int < 10 or ( mariadb_version.major | int == 10 and mariadb_version.minor | int < 4 )
+
+    # root user
+    # Has to be after the root password assignment, for idempotency.
+    - name: Template .my.cnf file with root password credentials into root's home dir.
+      template:
+        src: "dynamic.cnf.j2"
+        dest: "{{ (mariadb_root_home, '.my.cnf') | path_join }}"
+        owner: root
+        group: root
+        mode: 0600
+      vars:
+        cnf_data:
+          client:
+            user: "{{ mariadb_root_username }}"
+            password: "{{ mariadb_root_password }}"
+      when:
+        - not ( mariadb_root_auth_by_unix_socket | default(true) )
+        - mariadb_root_password | default('') | length
+        - mariadb_root_home | default('') | length
+
+
+# Admin user
+- name: Admin user.
+  when:
+    - mariadb_admin_username | default('') | length
+    - mariadb_admin_password | default('') | length
+  block:
+    - name: Ensure admin user is present.
+      mysql_user:
+        name: "{{ mariadb_admin_username }}"
+        host: 'localhost'
+        password: "{{ mariadb_admin_password }}"
+        priv: '*.*:ALL,GRANT'
+        state: present
+      when:
+        - mariadb_admin_username != mariadb_root_username
+
+    # Has to be after the password assignment, for idempotency.
+    - name: Template user's my.cnf file with password credentials into home dir.
+      template:
+        src: "dynamic.cnf.j2"
+        dest: "{{ (mariadb_admin_home, '.my.cnf') | path_join }}"
+        owner: "{{ mariadb_admin_sysuser }}"
+        mode: 0600
+      vars:
+        cnf_data:
+          client:
+            user: "{{ mariadb_admin_username }}"
+            password: "{{ mariadb_admin_password }}"
+      when:
+        - mariadb_admin_home | default('') | length

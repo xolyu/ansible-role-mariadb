@@ -1,0 +1,118 @@
+---
+
+# not implemented yet
+# mariadb_package_source: system_maintainer  # system_maintainer, mariadb_repo
+
+mariadb_ensure_requirements: no
+mariadb_enabled_on_startup: yes
+mariadb_secure_installation: on_install  # on_install, always, never
+
+mariadb_config_style: single_cnf  # single_cnf, included_cnf, none
+
+# The default root user installed by mysql - almost always root
+# Note: since MariaDB 10.4 multi auth methods with password and
+#       unix_socket at the same time are supported.
+mariadb_root_username: root
+# mariadb_root_password: root
+mariadb_root_auth_by_unix_socket: yes
+mariadb_root_home: /root
+
+# Set this to `yes` to forcibly update the root auth method.
+mariadb_root_auth_update: no
+
+# Set this to the user ansible is logging in as - should have root
+# or sudo access
+# mariadb_admin_username: ansible
+# mariadb_admin_password: ansible
+# mariadb_admin_sysuser: ansible
+# mariadb_admin_home: /home/ansible
+
+
+mariadb_config:
+
+  global_cnf:
+    $header: $var(__mariadb_global_cnf_header)
+    client-server:
+      socket: $var(mariadb_socket)
+      '!includedir': $var(__mariadb_config_default_include_dirs)
+
+  single_cnf:
+    client-server:
+      socket: $var(mariadb_socket)
+
+  50-server:
+    $state: disabled
+
+  80-ansible-managed:
+    mysqld:
+      # Basic Settings
+      # port: 3306
+      bind-address: $var(mariadb_bind_address)
+      pid-file: $var(mariadb_pid_file)
+      basedir: /usr
+      # skip-name-resolve: $set
+
+      # Fine Tuning / Memory
+      # https://mariadb.com/kb/en/configuring-mariadb-for-optimal-performance/
+      max_allowed_packet: 64M
+      query_cache_size: 16M
+      read_buffer_size: 1M
+      read_rnd_buffer_size: 2M
+      # » InnoDB
+      innodb_buffer_pool_size: 256M  # up to 80% of RAM
+      # » Aria
+      aria_pagecache_buffer_size: 256M
+      # » MyISAM (not used for new DBs since MariaDB 10.4+)
+      key_buffer_size: 1M  # when small, not zero
+
+      # Character Sets
+      character_set_server: $var(mariadb_encoding)
+      collation_server: $var(mariadb_collation)
+
+    mysqldump:
+      max_allowed_packet: 64M
+
+# mariadb_config_extra_1: {}
+# mariadb_config_extra_2: {}
+# mariadb_config_extra_3: {}
+
+
+# Define a custom list of packages to install; if none provided, the default
+# package list from vars/[OS-family].yml will be used.
+# mariadb_packages:
+#   - mysql
+#   - mysql-server
+
+# default values depending on OS (see vars/...)
+# mariadb_config_file: /etc/my.cnf
+# mariadb_configs_dir: /etc/my.cnf.d
+# mariadb_socket: /var/lib/mysql/mysql.sock
+# mariadb_pid_file: /var/run/mysqld/mysqld.pid
+
+# general settings
+# mariadb_port: 3306
+mariadb_bind_address: '127.0.0.1'
+mariadb_datadir: /var/lib/mysql
+
+# character set and collation
+mariadb_encoding: utf8mb4
+mariadb_collation: utf8mb4_general_ci
+
+
+# Databases
+mariadb_databases: []
+#   - name: example
+#     encoding: utf8
+#     collation: utf8_general_ci
+#     state: present  # present, absent
+#     replicate: 1  !??
+
+# Users
+mariadb_users: []
+#   - name: example
+#     host: '127.0.0.1'
+#     password: TOP_secret
+#     priv: '*.*:USAGE'
+#     state: present  # present, absent
+#     append_privs: no  # no, yes
+#     encrypted: no  # no, yes

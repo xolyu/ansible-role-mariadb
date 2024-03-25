@@ -1,0 +1,33 @@
+---
+
+# Disallow root login remotely
+- name: Disallow root login remotely.
+  command: 'mysql -NBe "{{ item }}"'
+  register: _result_mysql
+  with_items:
+    - "DELETE FROM mysql.global_priv WHERE User='{{ mariadb_root_username }}' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
+    - "DELETE FROM mysql.user WHERE User='{{ mariadb_root_username }}' AND Host NOT IN ('localhost', '127.0.0.1', '::1');"
+  changed_when: false
+  failed_when:
+    - _result_mysql.rc > 0
+    - _result_mysql.stderr | regex_search("Table 'mysql\\.global_priv' doesn't exist") is none
+
+# Remove anonymous users
+- name: Remove anonymous users.
+  command: 'mysql -NBe "{{ item }}"'
+  register: _result_mysql
+  with_items:
+    - "DELETE FROM mysql.global_priv WHERE User='';"
+    - "DELETE FROM mysql.user WHERE User='';"
+  changed_when: false
+  failed_when:
+    - _result_mysql.rc > 0
+    - _result_mysql.stderr | regex_search("Table 'mysql\\.global_priv' doesn't exist") is none
+
+# Remove test database
+- name: Remove MySQL test database.
+  command: 'mysql -NBe "{{ item }}"'
+  with_items:
+    - "DROP DATABASE IF EXISTS test;"
+    - "DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%'"
+  changed_when: false

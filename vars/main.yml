@@ -1,0 +1,106 @@
+---
+# vars file for mariadb
+
+__mariadb_special_config_names:
+  - global_cnf
+  - single_cnf
+
+__mariadb_option_batches:
+
+  - desc: Basic Settings
+    options:
+      - port
+      - bind_address
+      - socket
+      - user
+      - password
+      - pid_file
+      - basedir
+      - datadir
+      - tmpdir
+      - skip_name_resolve
+      - symbolic_links
+
+  - desc: Fine Tuning / Memory Settings
+    options:
+      - max_allowed_packet
+      - table_open_cache
+      - sort_buffer_size
+      - read_buffer_size
+      - read_rnd_buffer_size
+      - myisam_sort_buffer_size
+      - thread_cache_size
+      - query_cache_+
+      - max_connections
+      - tmp_table_size
+      - max_heap_table_size
+      - group_concat_max_len
+      - join_buffer_size
+      - thread_stack
+      - thread_cache_size
+      - table_cache
+
+  - desc: Logging
+    options:
+      - general_log*
+      - log_+
+      - slow_query_log*
+      - long_query_time
+      - binlog_+
+      - max_binlog_+
+      - expire_logs_days
+
+  - desc: Replication
+    options:
+      - server_id
+      - read_only
+      - replicate_+
+      - relay_log*
+      - slave_+
+
+  - desc: SSL/TLS
+    options:
+      - ssl*
+
+  - desc: Character Sets
+    options:
+      - character_set+
+      - collation_+
+
+  - desc: Storage Engine InnoDB
+    options:
+      - innodb_+
+
+  - desc: Storage Engine Aria
+    options:
+      - aria_+
+
+  - desc: Storage Engine MyISAM
+    options:
+      - key_buffer_size
+      - key_cache_+
+      - myisam_+
+
+  - desc: Import all *.cnf files from configuration directory
+    options:
+      - '!includedir'
+      - '!include'
+
+
+__mariadb_global_cnf_header: |
+  # The MariaDB configuration file
+  #
+  # The MariaDB/MySQL tools read configuration files in the following order:
+  # 0. "/etc/mysql/my.cnf" symlinks to this file, reason why all the rest is read.
+  # 1. "/etc/mysql/mariadb.cnf" (this file) to set global defaults,
+  # 2. "/etc/mysql/conf.d/*.cnf" to set global options.
+  # 3. "/etc/mysql/mariadb.conf.d/*.cnf" to set MariaDB-only options.
+  # 4. "~/.my.cnf" to set user-specific options.
+  #
+  # If the same option is defined multiple times, the last one will apply.
+  #
+  # One can use all long options that the program supports.
+  # Run program with --help to get a list of available options and with
+  # --print-defaults to see which it would actually understand and use.
+  #
+  # If you are new to MariaDB, check out https://mariadb.com/kb/en/basic-mariadb-articles/

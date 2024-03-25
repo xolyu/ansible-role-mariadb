@@ -1,0 +1,11 @@
+---
+
+- name: "Disable include config for {{ cnf.key }}."
+  command: "mv {{ src }} {{ dest }}"
+  args:
+    removes: "{{ src }}"
+    creates: "{{ dest }}"
+  vars:
+    src: "{{ cnf_path }}"
+    dest: "{{ cnf_path_disabled }}"
+  notify: restart mariadb

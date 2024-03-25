@@ -1,0 +1,16 @@
+---
+
+__mariadb_packages:
+  - mariadb-server
+  - mariadb-client
+
+__mariadb_config_file: /etc/mysql/mariadb.cnf
+__mariadb_configs_dir: /etc/mysql/mariadb.conf.d
+
+__mariadb_config_default_include_dirs:
+  - /etc/mysql/conf.d
+  - /etc/mysql/mariadb.conf.d
+
+__mariadb_daemon: mariadb
+__mariadb_socket: /run/mysqld/mysqld.sock
+__mariadb_pid_file: /run/mysqld/mysqld.pid

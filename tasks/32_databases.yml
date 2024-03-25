@@ -1,0 +1,11 @@
+---
+
+- name: Ensure MySQL databases are present.
+  mysql_db:
+    name: "{{ item.name }}"
+    encoding: "{{ item.encoding | default(mariadb_encoding) }}"
+    collation: "{{ item.collation | default(mariadb_collation) }}"
+    state: "{{ item.state | default('present') }}"
+    login_unix_socket: >-
+      {{ mariadb_root_auth_by_unix_socket | default(true) | ternary(mariadb_socket, omit) }}
+  with_items: "{{ mariadb_databases }}"

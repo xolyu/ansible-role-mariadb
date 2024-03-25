@@ -1,0 +1,15 @@
+---
+
+- name: Ensure MySQL users are present.
+  mysql_user:
+    name: "{{ item.name }}"
+    host: "{{ item.host | default('127.0.0.1') }}"
+    password: "{{ item.password }}"
+    priv: "{{ item.priv | default('*.*:USAGE') }}"
+    state: "{{ item.state | default('present') }}"
+    append_privs: "{{ item.append_privs | default(false) }}"
+    encrypted: "{{ item.encrypted | default(false) }}"
+    login_unix_socket: >-
+      {{ mariadb_root_auth_by_unix_socket | default(true) | ternary(mariadb_socket, omit) }}
+  with_items: "{{ mariadb_users }}"
+  no_log: true

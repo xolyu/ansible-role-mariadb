@@ -1,0 +1,59 @@
+---
+
+# Variable configuration
+- name: Include variables tasks.
+  include_tasks: 01_variables.yml
+
+# Setup/install tasks
+- name: Include setup tasks.
+  include_tasks: "10_setup-{{ ansible_os_family }}.yml"
+
+- name: Check if MariaDB packages were installed.
+  set_fact:
+    mariadb_install_packages: >-
+      {{ (mariadb_install_packages_deb is defined and mariadb_install_packages_deb.changed) }}
+
+# Configure MariaDB
+- name: Include configuration tasks.
+  include_tasks: 20_configure.yml
+  when: mariadb_config_style in ['included_cnf', 'single_cnf']
+
+- name: Ensure MariaDB is started and enabled on boot.
+  service:
+    name: "{{ mariadb_daemon }}"
+    state: started
+    enabled: "{{ mariadb_enabled_on_startup }}"
+
+# MariaDB version
+- name: Find MariaDB version.
+  command: mysql --version
+  register: _result_mariadb_version
+  changed_when: false
+
+- name: Define mariadb_version.
+  set_fact:
+    mariadb_version:
+      is_mariadb: "{{ item | regex_search('MariaDB') is not none }}"
+      version: '{{ item | regex_findall(''(\d+\.\d+\.\d+)-MariaDB'') | first | default("") }}'
+      major: '{{ ( item | regex_findall(_regex_ver_components) ).0.0 | default("") }}'
+      minor: '{{ ( item | regex_findall(_regex_ver_components) ).0.1 | default("") }}'
+      build: '{{ ( item | regex_findall(_regex_ver_components) ).0.2 | default("") }}'
+  vars:
+    _regex_ver_components: '(\d+)\.(\d+)\.(\d+)-MariaDB'
+    item: "{{ _result_mariadb_version.stdout }}"
+
+
+- name: Include installation securing tasks.
+  include_tasks: 27_secure-installation.yml
+  when: >-
+    mariadb_secure_installation == 'always'  or
+    (mariadb_secure_installation == 'on_install'  and  mariadb_install_packages)
+
+- name: Include root/admin user tasks.
+  include_tasks: 28_root-admin-user.yml
+
+- name: Include databases tasks.
+  include_tasks: 32_databases.yml
+
+- name: Include users tasks.
+  include_tasks: 34_users.yml

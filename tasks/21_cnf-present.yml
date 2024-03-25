@@ -1,0 +1,17 @@
+---
+
+- name: "Template {{ cnf.key }}.cnf file."
+  template:
+    src: dynamic.cnf.j2
+    dest: "{{ cnf_path }}"
+    owner: root
+    group: root
+    mode: 0644
+  vars:
+    cnf_data: "{{ cnf.value }}"
+  notify: restart mariadb
+
+- name: "Ensure {{ cnf.key }}.disabled is absent."
+  file:
+    path: "{{ cnf_path_disabled }}"
+    state: absent

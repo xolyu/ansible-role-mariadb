@@ -1,0 +1,69 @@
+---
+
+- name: Block for single configuration file
+  when: mariadb_config_style == 'single_cnf'
+  block:
+
+    - name: Define _mariadb_single_config.
+      set_fact:
+        _mariadb_single_config: "{{ _mariadb_config.single_cnf | default({}) }}"
+
+    - name: Combine other configs to _mariadb_single_config.
+      set_fact:
+        _mariadb_single_config: "{{ _mariadb_single_config | combine(cnf.value) }}"
+      loop: "{{ _mariadb_config | dict2items }}"
+      loop_control:
+        loop_var: cnf
+        label: "{{ cnf.key }}"
+      when:
+        - cnf.key not in __mariadb_special_config_names
+        - cnf.value['$state'] | default('present') not in ['disabled', 'absent']
+
+- name: Template global mariadb.cnf config file.
+  template:
+    src: dynamic.cnf.j2
+    dest: "{{ mariadb_config_file }}"
+    owner: root
+    group: root
+    mode: 0644
+  vars:
+    cnf_data: "{{ _mariadb_single_config if mariadb_config_style == 'single_cnf'
+      else _mariadb_config.global_cnf }}"
+  when: >
+    mariadb_config_style == 'single_cnf'  or  _mariadb_config.global_cnf is defined
+  notify: restart mariadb
+
+- name: Block for included configuration files
+  when: mariadb_config_style == 'included_cnf'
+  block:
+
+    - name: Ensure MariaDB include directory existance.
+      file:
+        path: "{{ mariadb_configs_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Include cnf file tasks by state.
+      include_tasks: "21_cnf-{{ cnf_state }}.yml"
+      vars:
+        prestate: "{{ cnf.value['$state'] | default('present') }}"
+        cnf_state: "{{ prestate if prestate in ['present', 'disabled', 'absent'] else 'present' }}"
+        cnf_path: "{{ (mariadb_configs_dir, cnf.key~'.cnf') | path_join }}"
+        cnf_path_disabled: "{{ (mariadb_configs_dir, cnf.key~'.disabled') | path_join }}"
+      loop: "{{ _mariadb_config | dict2items }}"
+      loop_control:
+        loop_var: cnf
+        label: "{{ cnf.key }}"
+      when: cnf.key not in __mariadb_special_config_names
+
+- name: Ensure data directory existance.
+  file:
+    path: "{{ mariadb_datadir }}"
+    state: directory
+    owner: mysql
+    group: mysql
+    mode: 0755
+    setype: mysqld_db_t
+  when: mariadb_datadir is defined
