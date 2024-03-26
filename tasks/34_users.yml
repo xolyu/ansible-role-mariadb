@@ -3,7 +3,7 @@
 - name: Ensure MySQL/MariaDB users are present.
   mysql_user:
     name: "{{ item.name }}"
-    host: "{{ item.host | default('127.0.0.1') }}"
+    host: "{{ item.host | default('localhost') }}"
     password: "{{ item.password }}"
     priv: "{{ item.priv | default('*.*:USAGE') }}"
     state: "{{ item.state | default('present') }}"

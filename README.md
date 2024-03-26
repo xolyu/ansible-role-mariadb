@@ -193,7 +193,7 @@ Installs and configures the MariaDB database server. Creates databases and users
   ```yml
   mariadb_users:
     - name: example
-      host: '127.0.0.1'
+      host: 'localhost'
       password: TOP_secret
       priv: '*.*:USAGE'
       state: present  # present, absent
