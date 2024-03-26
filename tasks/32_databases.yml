@@ -1,6 +1,6 @@
 ---
 
-- name: Ensure MySQL databases are present.
+- name: Ensure MySQL/MariaDB databases are present.
   mysql_db:
     name: "{{ item.name }}"
     encoding: "{{ item.encoding | default(mariadb_encoding) }}"

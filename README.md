@@ -88,11 +88,6 @@ Installs and configures the MariaDB database server. Creates databases and users
   Type: str  
   Default: _undefined_
 
-* **`VAR`**  
-  DESC  
-  Type: str  
-  Default: `VAL`
-
 
 * **`mariadb_config`**  
   Describes the configuration for MariaDB, organized into individual files in the case of `included_cnf`.  
@@ -157,25 +152,25 @@ Installs and configures the MariaDB database server. Creates databases and users
   Bind address for MariaDB server.
   Is used in default config with `$var(...)` value.  
   Type: str  
-  Default: `VAL`
+  Default: `127.0.0.1`
 
 * **`mariadb_datadir`**  
   Is used to ensure the data directory with the permissions.  
   In case of changing from default, it needed to be added to the config, e.g. `datadir: $var(mariadb_datadir)`.
   Type: str  
-  Default: `VAL`
+  Default: `/var/lib/mysql`
 
 * **`mariadb_encoding`**  
   Encoding settings for MariaDB config.
   Is used in default config with `$var(...)` value.  
   Type: str  
-  Default: `VAL`
+  Default: `utf8mb4`
 
 * **`mariadb_collation`**  
   Collation settings for MariaDB config.
   Is used in default config with `$var(...)` value.  
   Type: str  
-  Default: `VAL`
+  Default: `utf8mb4_general_ci`
 
 * **`mariadb_databases`**  
   DESC  
@@ -205,13 +200,6 @@ Installs and configures the MariaDB database server. Creates databases and users
       append_privs: no  # no, yes
       encrypted: no  # no, yes
   ```
-
-
-
-
-
-
-
 
 
 <!--

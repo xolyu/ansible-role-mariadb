@@ -1,6 +1,6 @@
 ---
 
-- name: Ensure MySQL users are present.
+- name: Ensure MySQL/MariaDB users are present.
   mysql_user:
     name: "{{ item.name }}"
     host: "{{ item.host | default('127.0.0.1') }}"

@@ -25,7 +25,7 @@
     - _result_mysql.stderr | regex_search("Table 'mysql\\.global_priv' doesn't exist") is none
 
 # Remove test database
-- name: Remove MySQL test database.
+- name: Remove MySQL/MariaDB test database.
   command: 'mysql -NBe "{{ item }}"'
   with_items:
     - "DROP DATABASE IF EXISTS test;"
