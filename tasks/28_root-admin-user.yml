@@ -93,6 +93,8 @@
         password: "{{ mariadb_admin_password }}"
         priv: '*.*:ALL,GRANT'
         state: present
+        login_unix_socket: >-
+          {{ mariadb_root_auth_by_unix_socket | default(true) | ternary(mariadb_socket, omit) }}
       when:
         - mariadb_admin_username != mariadb_root_username
 
