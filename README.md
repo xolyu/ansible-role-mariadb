@@ -7,7 +7,7 @@ Installs and configures the MariaDB database server. Creates databases and users
 
 ## Requirements
 
-* Systempackage `python3-mysqldb` &ndash; for Ansible's MySQL modules [`mysql_user`](https://docs.ansible.com/ansible/latest/collections/community/mysql/mysql_user_module.html) and [`mysql_db`](https://docs.ansible.com/ansible/latest/collections/community/mysql/mysql_db_module.html).
+* Systempackage `python3-pymysql` &ndash; for Ansible's MySQL modules [`mysql_user`](https://docs.ansible.com/ansible/latest/collections/community/mysql/mysql_user_module.html) and [`mysql_db`](https://docs.ansible.com/ansible/latest/collections/community/mysql/mysql_db_module.html).
 
 *For automatic ensuring of the packages, see variable `php_ensure_requirements`.*
 

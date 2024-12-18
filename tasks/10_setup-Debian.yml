@@ -2,7 +2,7 @@
 
 - name: Ensure required packages are installed.
   apt:
-    name: python3-mysqldb
+    name: python3-pymysql
   when: mariadb_ensure_requirements
 
 - name: Check if MariaDB is already installed.
