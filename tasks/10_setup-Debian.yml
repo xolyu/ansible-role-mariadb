@@ -22,10 +22,23 @@
     state: present
   register: mariadb_install_packages_deb
 
+# MariaDB version
+- name: Find MariaDB version.
+  command: mysql --version
+  register: _result_mariadb_version
+  changed_when: false
+
 # Because Ubuntu starts MariaDB as part of the install process, we need to stop
-# mariadb and remove the logfiles in case the user set a custom log file size.
+# MariaDB and remove the logfiles in case the user set a custom log file size.
+# Only do this in versions prior to 10.8.1, otherwise it will no longer be possible
+# to start the MariaDB service. See: https://jira.mariadb.org/browse/MDEV-27199
+# In current versions, it should not be a problem for the log file to be automatically
+# resized when the log file size is changed, followed by a service restart.
 - name: Block after installation
-  when: not _mariadb_installed.stat.exists
+  when:
+    - not _mariadb_installed.stat.exists
+    - ( _result_mariadb_version.stdout | regex_findall('(\d+\.\d+\.\d+)-MariaDB') |
+      first | default('999') ) is version('10.8.1', '<')
   block:
 
     - name: Ensure MariaDB is stopped after initial install.
