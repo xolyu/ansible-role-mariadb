@@ -29,12 +29,12 @@
         unix_socket: "{{ mariadb_root_auth_by_unix_socket | default(true) }}"
         pwd: "{{ mariadb_root_password | default('') }}"
         identified_with: >-
-          {% if pwd | length %}mariadb_native_password USING PASSWORD('{{ pwd }}')
+          {% if pwd | length > 0 %}mariadb_native_password USING PASSWORD('{{ pwd }}')
           {% if unix_socket | bool %}OR{% endif %}{% endif %}
           {% if unix_socket | bool %}unix_socket{% endif %}
       with_items: "{{ mariadb_root_hosts.stdout_lines | default([]) }}"
       when:
-        - mariadb_root_password | default('') | length  or  mariadb_root_auth_by_unix_socket | default(true)
+        - mariadb_root_password | default('') | length > 0  or  mariadb_root_auth_by_unix_socket | default(true)
         - mariadb_version.major | int > 10 or ( mariadb_version.major | int == 10 and mariadb_version.minor | int >= 4 )
 
     # Update root authentication unix_socket, MariaDB < 10.4.
@@ -57,7 +57,7 @@
       with_items: "{{ mariadb_root_hosts.stdout_lines | default([]) }}"
       when:
         - not ( mariadb_root_auth_by_unix_socket | default(true) )
-        - mariadb_root_password | default('') | length
+        - mariadb_root_password | default('') | length > 0
         - mariadb_version.major | int < 10 or ( mariadb_version.major | int == 10 and mariadb_version.minor | int < 4 )
 
     # root user
@@ -76,15 +76,15 @@
             password: "{{ mariadb_root_password }}"
       when:
         - not ( mariadb_root_auth_by_unix_socket | default(true) )
-        - mariadb_root_password | default('') | length
-        - mariadb_root_home | default('') | length
+        - mariadb_root_password | default('') | length > 0
+        - mariadb_root_home | default('') | length > 0
 
 
 # Admin user
 - name: Admin user.
   when:
-    - mariadb_admin_username | default('') | length
-    - mariadb_admin_password | default('') | length
+    - mariadb_admin_username | default('') | length > 0
+    - mariadb_admin_password | default('') | length > 0
   block:
     - name: Ensure admin user is present.
       mysql_user:
@@ -111,4 +111,4 @@
             user: "{{ mariadb_admin_username }}"
             password: "{{ mariadb_admin_password }}"
       when:
-        - mariadb_admin_home | default('') | length
+        - mariadb_admin_home | default('') | length > 0
